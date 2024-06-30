@@ -26,8 +26,9 @@ export default function ListGuard({ navigation }) {
           name: item.nombre + ' ' + item.apellido,
           subtitle: item.rut,
           avatar_url: item.avatar_url,
+          fono: item.fono,
           correo: item.correo,
-          telefono: item.telefono,
+          
         }));
         setList(data);
       })
@@ -35,6 +36,18 @@ export default function ListGuard({ navigation }) {
         console.error('Error al obtener los guardias:', error);
       });
   };
+  
+  const confirmEdit = (item) => {
+    Alert.alert(
+      'Editar guardia',
+      `¿Estás seguro de editar a ${item.name}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Editar', onPress: () => navigation.navigate("EditGuardias", { guardId: item.rut }) },
+      ],
+      { cancelable: false }
+    );
+  }
 
   const confirmDeletion = (item) => {
     Alert.alert(
@@ -52,6 +65,7 @@ export default function ListGuard({ navigation }) {
     axios.put(`http://192.168.56.1:3000/api/deleteguardias/${rut}`)
       .then(() => {
         fetchGuardias();
+        Alert.alert('Guardia eliminado', 'El guardia ha sido eliminado correctamente');
       })
       .catch(error => {
         console.error('Error al eliminar el guardia:', error);
@@ -72,16 +86,15 @@ export default function ListGuard({ navigation }) {
                   <ListItem.Title>{item.name}</ListItem.Title>
                   <ListItem.Subtitle>{item.subtitle}</ListItem.Subtitle>
                 </ListItem.Content>
-                <ListItem.Chevron />
               </ListItem>
             </TouchableOpacity>
             {expandedIndex === index && (
               <View style={styles.expandedView}>
                 <Text style={styles.detailText}>Email: {item.correo}</Text>
-                <Text style={styles.detailText}>Teléfono: {item.telefono}</Text>
+                <Text style={styles.detailText}>Teléfono: {item.fono}</Text>
                 <View style={styles.buttonContainer}>
                   <Button
-                    onPress={() => navigation.navigate("EditGuardias", { guardId: item.rut })}
+                    onPress={() => confirmEdit(item)}
                     type="clear"
                     icon={<Icon name="edit" size={25} color="grey" />}
                   />

@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useAuth } from '../authContext';
 
 export default function Admin({ navigation }) {
+  const { user, logout } = useAuth();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#e8ecf4' }}>
       <View style={styles.container}>
         <KeyboardAwareScrollView>
           <View style={styles.header}>
             <Text style={styles.subtitle}>
-              Bienvenido Administrador
+              Bienvenido {user?.nombre} {user?.apellido}
             </Text>
           </View>
 
@@ -19,7 +21,6 @@ export default function Admin({ navigation }) {
                 <Image
                   source={{ uri: 'https://cdn-icons-png.freepik.com/512/4009/4009133.png' }}
                   style={styles.image}
-                  
                 />
               </View>
               <Text style={styles.optionText}>Guardias</Text>
@@ -65,7 +66,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: 'black',
     textAlign: 'center',
-    
   },
   header: {
     alignItems: 'center',
@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 5,
   },
-  /** Options */
   optionsContainer: {
     flexDirection: 'column',
     alignItems: 'center',
