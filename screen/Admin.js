@@ -8,7 +8,7 @@ export default function Admin({ navigation }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#e8ecf4' }}>
       <View style={styles.container}>
-        <KeyboardAwareScrollView>
+        
           <View style={styles.header}>
             <Text style={styles.subtitle}>
               Bienvenido {user?.nombre} {user?.apellido}
@@ -26,7 +26,7 @@ export default function Admin({ navigation }) {
               <Text style={styles.optionText}>Guardias</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Metrics')}>
+            <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Metricas')}>
               <View style={styles.imageContainer}>
                 <Image
                   source={{ uri: 'https://cdn-icons-png.flaticon.com/512/1340/1340003.png' }}
@@ -46,7 +46,6 @@ export default function Admin({ navigation }) {
               <Text style={styles.optionText}>Estacionamientos</Text>
             </TouchableOpacity>
           </View>        
-        </KeyboardAwareScrollView>
       </View>
     </SafeAreaView>
   );

@@ -16,7 +16,7 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'proyectoqr'
+    database: 'qr'
 });
 
 connection.connect((err) => {
@@ -335,80 +335,92 @@ app.get('/api/verificar_rut/:rut', (req, res) => {
     });
   });
 
-//Registrar ingreso-egreso de un vehiculo a un estacionamiento
+
 // Crear un nuevo registro de ingreso/egreso
+
 app.post('/api/ingreso_egreso', (req, res) => {
-    const { rut_e, rut_g, estado } = req.body;
+    const { rut_e, rut_g, id_es, estado } = req.body;
     const fecha = new Date().toISOString().split('T')[0];
     const hora = new Date().toLocaleTimeString();
-  
+
     // Consultar el último registro de ingreso activo para el RUT
     const querySelect = 'SELECT * FROM ingreso_egreso WHERE rut_e = ? ORDER BY fecha DESC, hora DESC LIMIT 1';
-    const queryInsert = 'INSERT INTO ingreso_egreso (rut_e, rut_g, fecha, hora, estado) VALUES (?, ?, ?, ?, ?)';
-  
-    connection.beginTransaction(err => {
-      if (err) {
-        console.error('Error al iniciar la transacción:', err);
-        return res.status(500).send('Error al iniciar la transacción');
-      }
-  
-      connection.query(querySelect, [rut_e], (err, results) => {
-        if (err) {
-          console.error('Error al consultar el último registro de ingreso:', err);
-          return connection.rollback(() => {
-            res.status(500).send('Error al consultar el último registro de ingreso');
-          });
-        }
-  
-        if (results.length > 0 && results[0].estado === 1) {
-          // Hay un registro de ingreso activo, insertar salida
-          connection.query(queryInsert, [rut_e, rut_g, fecha, hora, 0], (err, results) => {
-            if (err) {
-              console.error('Error al insertar el registro de salida:', err);
-              return connection.rollback(() => {
-                res.status(500).send('Error al insertar el registro de salida');
-              });
-            }
-  
-            connection.commit(err => {
-              if (err) {
-                console.error('Error al realizar commit:', err);
-                return connection.rollback(() => {
-                  res.status(500).send('Error al realizar commit');
-                });
-              }
-  
-              res.send('Registro de salida realizado correctamente');
-            });
-          });
-        } else {
-          // No hay registro de ingreso activo, crear uno nuevo como entrada
-          connection.query(queryInsert, [rut_e, rut_g, fecha, hora, estado], (err, results) => {
-            if (err) {
-              console.error('Error al insertar el nuevo registro de ingreso:', err);
-              return connection.rollback(() => {
-                res.status(500).send('Error al insertar el nuevo registro de ingreso');
-              });
-            }
-  
-            connection.commit(err => {
-              if (err) {
-                console.error('Error al realizar commit:', err);
-                return connection.rollback(() => {
-                  res.status(500).send('Error al realizar commit');
-                });
-              }
-  
-              res.send('Registro de ingreso realizado correctamente');
-            });
-          });
-        }
-      });
-    });
-  });
-  
+    const queryInsert = 'INSERT INTO ingreso_egreso (rut_e, rut_g, fecha, hora, estado, id_es) VALUES (?, ?, ?, ?, ?, ?)';
+    const queryUpdate = 'UPDATE ingreso_egreso SET estado = 0 WHERE id_ie = ?';
 
-//Obtener el ultimo registro de ingreso-egreso de un usuario por su rut
+    connection.beginTransaction(err => {
+        if (err) {
+            console.error('Error al iniciar la transacción:', err);
+            return res.status(500).send('Error al iniciar la transacción');
+        }
+
+        connection.query(querySelect, [rut_e], (err, results) => {
+            if (err) {
+                console.error('Error al consultar el último registro de ingreso:', err);
+                return connection.rollback(() => {
+                    res.status(500).send('Error al consultar el último registro de ingreso');
+                });
+            }
+
+            if (results.length > 0 && results[0].estado === 1) {
+                // Hay un registro de ingreso activo, insertar salida
+                const id_ie = results[0].id_ie;
+
+                connection.query(queryInsert, [rut_e, rut_g, fecha, hora, 0, id_es], (err, results) => {
+                    if (err) {
+                        console.error('Error al insertar el registro de salida:', err);
+                        return connection.rollback(() => {
+                            res.status(500).send('Error al insertar el registro de salida');
+                        });
+                    }
+
+                    connection.query(queryUpdate, [id_ie], (err, results) => {
+                        if (err) {
+                            console.error('Error al actualizar el registro de ingreso:', err);
+                            return connection.rollback(() => {
+                                res.status(500).send('Error al actualizar el registro de ingreso');
+                            });
+                        }
+
+                        connection.commit(err => {
+                            if (err) {
+                                console.error('Error al realizar commit:', err);
+                                return connection.rollback(() => {
+                                    res.status(500).send('Error al realizar commit');
+                                });
+                            }
+
+                            res.send('Registro de salida realizado correctamente');
+                        });
+                    });
+                });
+            } else {
+                // No hay registro de ingreso activo, crear uno nuevo como entrada
+                connection.query(queryInsert, [rut_e, rut_g, fecha, hora, estado, id_es], (err, results) => {
+                    if (err) {
+                        console.error('Error al insertar el nuevo registro de ingreso:', err);
+                        return connection.rollback(() => {
+                            res.status(500).send('Error al insertar el nuevo registro de ingreso');
+                        });
+                    }
+
+                    connection.commit(err => {
+                        if (err) {
+                            console.error('Error al realizar commit:', err);
+                            return connection.rollback(() => {
+                                res.status(500).send('Error al realizar commit');
+                            });
+                        }
+
+                        res.send('Registro de ingreso realizado correctamente');
+                    });
+                });
+            }
+        });
+    });
+});
+
+// Obtener el ultimo registro de ingreso-egreso de un usuario por su rut
 app.get('/api/ultimo_registro/:rut_e', (req, res) => {
     const { rut_e } = req.params;
     const query = 'SELECT * FROM ingreso_egreso WHERE rut_e = ? ORDER BY id_ie DESC LIMIT 1';
@@ -427,7 +439,135 @@ app.get('/api/ultimo_registro/:rut_e', (req, res) => {
     });
 });
 
+//obtener estacionamientos dropdown
+app.get('/api/estacionamientosDropdown', (req, res) => {
+    const query = 'SELECT estacionamiento.id_es, estacionamiento.ubicacion FROM estacionamiento where estado = 1';
+    connection.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        res.json(results);
+    });
+});
 
+
+// Métricas
+// Obtener la cantidad de vehiculos estacionados en un estacionamiento
+app.get('/api/disponibilidad/:id_es', (req, res) => {
+    const { id_es } = req.params;
+    const query = 'SELECT COUNT(*) AS cantidad FROM ingreso_egreso WHERE id_es = ? AND estado = 1';
+    connection.query(query, [id_es], (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        res.json(results[0]);
+    });
+});
+
+app.get('/api/capacidad/:id_es', (req, res) => {
+    const { id_es } = req.params;
+    const query = 'SELECT capacidad FROM estacionamiento WHERE id_es = ?';
+    connection.query(query, id_es, (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        res.json(results[0]); // Devolver el primer resultado, asumiendo que solo debería haber uno por id_es
+    });
+});
+
+// Obtener la cantidad de ingresos por hora
+app.get('/api/metricas/hora', (req, res) => {
+    const { inicio, fin } = req.query;
+    const query = `
+        SELECT CONCAT(HOUR(hora), ':00-', HOUR(hora), ':59') AS intervalo, COUNT(*) AS total_ingresos 
+        FROM ingreso_egreso 
+        WHERE fecha BETWEEN ? AND ? 
+        AND estado = 1 
+        GROUP BY HOUR(hora)
+    `;
+    console.log(`Ejecutando consulta con inicio: ${inicio}, fin: ${fin}`);
+    connection.query(query, [inicio, fin], (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        console.log('Consulta realizada correctamente. Resultados:', results);
+        res.json(results);
+    });
+});
+
+// Obtener la cantidad de ingresos por día
+app.get('/api/metricas/dia', (req, res) => {
+    const { inicio, fin } = req.query;
+    const query = `
+        SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS intervalo, COUNT(*) AS total_ingresos 
+        FROM ingreso_egreso 
+        WHERE fecha BETWEEN ? AND ? 
+        AND estado = 1 
+        GROUP BY DATE_FORMAT(fecha, '%Y-%m-%d')
+    `;
+    console.log(`Ejecutando consulta por día con inicio: ${inicio}, fin: ${fin}`);
+    connection.query(query, [inicio, fin], (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta por día:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        console.log('Consulta por día realizada correctamente. Resultados:', results);
+        res.json(results);
+    });
+});
+
+// Obtener la cantidad de ingresos por semana
+app.get('/api/metricas/semana', (req, res) => {
+    const { inicio, fin } = req.query;
+    const query = `
+        SELECT CONCAT(YEAR(fecha), '-', WEEK(fecha)) AS intervalo, COUNT(*) AS total_ingresos 
+        FROM ingreso_egreso 
+        WHERE fecha BETWEEN ? AND ? 
+        AND estado = 1 
+        GROUP BY YEAR(fecha), WEEK(fecha)
+    `;
+    console.log(`Ejecutando consulta por semana con inicio: ${inicio}, fin: ${fin}`);
+    connection.query(query, [inicio, fin], (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta por semana:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        console.log('Consulta por semana realizada correctamente. Resultados:', results);
+        res.json(results);
+    });
+});
+
+// Obtener la cantidad de ingresos por mes
+app.get('/api/metricas/mes', (req, res) => {
+    const { inicio, fin } = req.query;
+    const query = `
+        SELECT DATE_FORMAT(fecha, '%Y-%m') AS intervalo, COUNT(*) AS total_ingresos 
+        FROM ingreso_egreso 
+        WHERE fecha BETWEEN ? AND ? 
+        AND estado = 1 
+        GROUP BY DATE_FORMAT(fecha, '%Y-%m')
+    `;
+    console.log(`Ejecutando consulta por mes con inicio: ${inicio}, fin: ${fin}`);
+    connection.query(query, [inicio, fin], (err, results) => {
+        if (err) {
+            console.error('Error al realizar la consulta por mes:', err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        console.log('Consulta por mes realizada correctamente. Resultados:', results);
+        res.json(results);
+    });
+});
 
 
 // Iniciar el servidor

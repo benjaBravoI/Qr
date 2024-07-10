@@ -1,0 +1,57 @@
+app.get('/api/metricas', (req, res) => {
+    const { inicio, fin, tipo } = req.query;
+    
+    let query;
+    switch (tipo) {
+        case 'hora':
+            query = `
+                SELECT CONCAT(HOUR(hora), ':00-', HOUR(hora), ':59') AS intervalo, COUNT(*) AS total_ingresos 
+                FROM ingreso_egreso 
+                WHERE fecha BETWEEN ? AND ? 
+                AND estado = 1 
+                GROUP BY HOUR(hora)
+            `;
+            break;
+        case 'dia':
+            query = `
+                SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS intervalo, COUNT(*) AS total_ingresos 
+                FROM ingreso_egreso 
+                WHERE fecha BETWEEN ? AND ? 
+                AND estado = 1 
+                GROUP BY DATE_FORMAT(fecha, '%Y-%m-%d')
+            `;
+            break;
+        case 'semana':
+            query = `
+                SELECT CONCAT(YEAR(fecha), '-', WEEK(fecha)) AS intervalo, COUNT(*) AS total_ingresos 
+                FROM ingreso_egreso 
+                WHERE fecha BETWEEN ? AND ? 
+                AND estado = 1 
+                GROUP BY YEAR(fecha), WEEK(fecha)
+            `;
+            break;
+        case 'mes':
+            query = `
+                SELECT DATE_FORMAT(fecha, '%Y-%m') AS intervalo, COUNT(*) AS total_ingresos 
+                FROM ingreso_egreso 
+                WHERE fecha BETWEEN ? AND ? 
+                AND estado = 1 
+                GROUP BY DATE_FORMAT(fecha, '%Y-%m')
+            `;
+            break;
+        default:
+            res.status(400).send('Tipo de métrica no válido');
+            return;
+    }
+    
+    console.log(`Ejecutando consulta con tipo: ${tipo}, inicio: ${inicio}, fin: ${fin}`);
+    connection.query(query, [inicio, fin], (err, results) => {
+        if (err) {
+            console.error(`Error al realizar la consulta por ${tipo}:`, err);
+            res.status(500).send('Error al realizar la consulta');
+            return;
+        }
+        console.log(`Consulta por ${tipo} realizada correctamente. Resultados:`, results);
+        res.json(results);
+    });
+});

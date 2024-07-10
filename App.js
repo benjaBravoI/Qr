@@ -11,6 +11,7 @@ import Guardia from "./screen/Guardia";
 import AddGuard from "./screen/AddGuard";
 import AddParking from "./screen/AddParking";
 import ListGuard from "./screen/ListGuard";
+import Metricas from "./screen/Metricas";
 import ListParking from "./screen/ListParking";
 import EditGuardias from "./screen/EditGuardias";
 import EditEstacionamiento from "./screen/EditEstacionamiento";
@@ -63,6 +64,8 @@ const App = () => {
           <Stack.Screen name="EditEstacionamiento" component={EditEstacionamiento} options={{ title: 'Editar Estacionamientos' }} />
           <Stack.Screen name="AddGuard" component={AddGuard} options={{ title: 'Agregar Guardia' }} />
           <Stack.Screen name="AddParking" component={AddParking} options={{ title: 'Agregar Estacionamiento' }} />
+          <Stack.Screen name="Metricas" component={Metricas} options={{ title: 'Métricas' }} />
+
           <Stack.Screen 
             name="ListParking" 
             component={ListParking} 
@@ -82,6 +85,8 @@ const App = () => {
     </AuthProvider>
   );
 };
+
+
 
 const LogoutButton = ({ navigation }) => {
   const { logout } = useAuth();
